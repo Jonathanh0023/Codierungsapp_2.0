@@ -212,14 +212,14 @@ def render_recent_activity():
 
         if recent_history:
             for item in recent_history:
-                with st.expander(f"Codierung vom {item['created_at'][:10]}"):
-                    st.write(f"Methode: {item['coding_method']}")
-                    st.write(f"Modell: {item['model_used']}")
-                    st.write(f"Verarbeitungszeit: {item['processing_time']:.2f} Sekunden")
-                    st.write(f"Eingabetext: {item['input_text']}")
-                    st.write(f"Zugewiesene Codes: {item['assigned_codes']}")
+                # Format the date nicely
+                created_at = item.get('created_at', '')[:10]
+                with st.expander(f"Interaktion vom {created_at}"):
+                    st.write(f"Input: {item.get('input_text', 'N/A')}")
+                    st.write(f"Output: {item.get('output_text', 'N/A')}")
+                    st.write(f"Model: {item.get('model_used', 'N/A')}")
         else:
-            st.info("Noch keine Codierungen vorhanden. Starte eine Codierung, um deine Historie hier zu sehen!")
+            st.info("Noch keine AI-Interaktionen vorhanden. Starte eine Codierung, um deine Historie hier zu sehen!")
     except Exception as e:
         st.error(f"Fehler beim Laden der letzten Aktivitäten: {str(e)}")
 

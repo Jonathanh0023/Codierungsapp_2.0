@@ -175,18 +175,20 @@ class DatabaseService:
 
     @staticmethod
     def get_recent_coding_history(user_id: str, limit: int = 5):
-        """Get recent coding history for a user"""
+        """Get recent AI interactions for a user"""
         try:
-            response = st.session_state.supabase.table('coding_history')\
-                .select('*')\
-                .eq('user_id', user_id)\
-                .order('created_at', desc=True)\
-                .limit(limit)\
+            result = st.session_state.supabase.table('ai_interactions') \
+                .select('*') \
+                .eq('user_id', user_id) \
+                .order('created_at', desc=True) \
+                .limit(limit) \
                 .execute()
-            return response.data
+            
+            return result.data
+            
         except Exception as e:
-            print(f"Error getting coding history: {str(e)}")
-            raise
+            print(f"Error fetching AI interactions: {str(e)}")
+            return []
 
     @staticmethod
     def log_coding_history(log_data: dict):
