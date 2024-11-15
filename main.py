@@ -152,6 +152,16 @@ def landing_page():
     render_recent_activity()
     render_footer()
 
+    # Create four equal columns
+    col1, col2= st.columns(2)
+
+    # Use the fourth column for the logout button
+    with col1:
+        if st.button('Logout'):
+            # Logic for logging out the user
+            st.session_state.logged_in = False  # Example logic
+            st.success("You have been logged out.")
+
 def handle_app_selection(app_name: str):
     """Handle app selection and state loading"""
     # Load user state before changing the app
