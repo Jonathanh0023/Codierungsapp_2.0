@@ -1,0 +1,12 @@
+streamlit
+streamlit-authenticator
+openai
+tenacity
+fuzzywuzzy
+pandas
+xlsxwriter
+python-Levenshtein
+openpyxl
+python-dotenv
+uuid
+supabase
