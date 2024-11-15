@@ -160,7 +160,7 @@ def landing_page():
         if st.button('Logout'):
             # Logic for logging out the user
             st.session_state.logged_in = False  # Example logic
-            st.success("You have been logged out.")
+            st.success("Du wurdest erfolgreich abgemeldet.")
 
 def handle_app_selection(app_name: str):
     """Handle app selection and state loading"""
