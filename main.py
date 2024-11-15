@@ -237,9 +237,6 @@ def main():
     elif st.session_state.selected_app == "FuzzyWuzzy Markencodierung":
         fuzzy_page()
     
-    # Logout button in sidebar
-    if st.sidebar.button("Logout", use_container_width=True):
-        handle_logout()
 
 def handle_logout():
     """Handle user logout"""
