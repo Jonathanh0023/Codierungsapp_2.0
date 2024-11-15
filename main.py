@@ -152,15 +152,13 @@ def landing_page():
     render_recent_activity()
     render_footer()
 
-    # Create four equal columns
-    col1, col2= st.columns(2)
+    # Create two columns
+    col1, col2 = st.columns(2)
 
-    # Use the fourth column for the logout button
+    # Use the first column for the logout button
     with col1:
         if st.button('Logout'):
-            # Logic for logging out the user
-            st.session_state.logged_in = False  # Example logic
-            st.success("Du wurdest erfolgreich abgemeldet.")
+            handle_logout()
 
 def handle_app_selection(app_name: str):
     """Handle app selection and state loading"""
