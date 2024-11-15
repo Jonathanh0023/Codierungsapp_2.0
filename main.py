@@ -119,10 +119,11 @@ def landing_page():
     # Get current user info
     current_user = AuthService.get_current_user()
     
-    # User welcome message
+    # User welcome message with full_name instead of email
+    display_name = current_user.get('full_name', current_user['username'])  # Fallback to username if full_name is not available
     st.markdown(f"""
         <div class='user-welcome'>
-            Willkommen, {current_user['username']}! 👋
+            Willkommen, {display_name}! 👋
         </div>
     """, unsafe_allow_html=True)
 

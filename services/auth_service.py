@@ -75,12 +75,33 @@ class AuthService:
         return bool(st.session_state.get('authentication_status', False))
     
     @staticmethod
-    def get_current_user() -> dict:
-        """Get current user information"""
-        if not AuthService.is_authenticated():
-            return None
-            
-        return {
-            'user_id': st.session_state.user_id,
-            'username': st.session_state.username
-        } 
+    def get_current_user():
+        """Get current user information including profile data"""
+        try:
+            # Get basic auth data
+            user = st.session_state.supabase.auth.get_user()
+            user_id = user.user.id
+            email = user.user.email
+
+            # Fetch user profile data from user_profiles table
+            profile_data = st.session_state.supabase.table('user_profiles') \
+                .select('*') \
+                .eq('id', user_id) \
+                .single() \
+                .execute()
+
+            # Combine auth data with profile data
+            return {
+                'user_id': user_id,
+                'username': email,
+                'full_name': profile_data.data.get('full_name', email),
+                'organization': profile_data.data.get('organization', '')
+            }
+        except Exception as e:
+            print(f"Error fetching user data: {str(e)}")
+            return {
+                'user_id': None,
+                'username': None,
+                'full_name': None,
+                'organization': None
+            } 
