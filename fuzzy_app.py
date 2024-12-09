@@ -42,12 +42,35 @@ def fuzzy_page():
     except Exception as e:
         st.error(f"Fehler beim Laden der Codepläne: {str(e)}")
 
+    # Settings for input processing
+    with st.expander("⚙️ Erweiterte Einstellungen", expanded=False):
+        col_settings1, col_settings2 = st.columns([1, 1])
+        
+        with col_settings1:
+            use_spaces = st.checkbox(
+                "Auch nach Leerzeichen trennen",
+                help="Aktivieren Sie diese Option, wenn die Eingaben auch nach Leerzeichen getrennt werden sollen"
+            )
+        
+        if use_spaces:
+            with col_settings2:
+                exceptions = st.text_area(
+                    "Ausnahmen für Leerzeichen-Trennung (eine pro Zeile)",
+                    help="Markennamen, die Leerzeichen enthalten und zusammen bleiben sollen",
+                    placeholder="New Balance\nCoca Cola\nDr Pepper",
+                    key="exceptions"
+                )
+                exception_set = {exc.strip().lower() for exc in exceptions.split('\n') if exc.strip()}
+        else:
+            exception_set = set()
+
     # Manual input section
-    st.subheader("Füge hier den Codeplan ein")
+    st.subheader("1️⃣ Codeplan")
     brands_and_codes = st.text_area(
-        "Code und Zuordnung entweder aus zwei Spalten in Excel reinkopieren oder hier durch Tabstop trennen",
+        "Fügen Sie den Codeplan ein (aus Excel kopiert oder mit Tab getrennt)",
         value='\n'.join([f"{code}\t{cat}" for code, cat in zip(saved_codeplan['codes'], saved_codeplan['categories'])]) if saved_codeplan else "",
-        key="code_plan"
+        key="code_plan",
+        height=150
     )
 
     # Process input text and save to dictionary
@@ -65,19 +88,38 @@ def fuzzy_page():
                         for name in clean_brand.split('/'):
                             brand_codes[name.strip().lower()] = code
 
-    # Text area for survey data
-    st.subheader("Hier die offenen Nennungen einfügen")
-    survey_input = st.text_area("", key="survey_input")
+    # Text area for survey data with improved UI
+    st.subheader("2️⃣ Offene Nennungen")
+    col_input1, col_input2 = st.columns([2, 1])
+    
+    with col_input1:
+        survey_input = st.text_area(
+            "Fügen Sie hier die zu codierenden Nennungen ein:",
+            key="survey_input",
+            height=150
+        )
+    
+    with col_input2:
+        st.markdown("##### 📝 Eingabeformat")
+        st.markdown("""
+        - Trennung durch Komma: `Nike, Adidas, Puma`
+        """)
+        
+        if use_spaces:
+            st.markdown("""
+            - Zusätzlich durch Leerzeichen: `Nike Adidas Puma`
+            - Mit Ausnahmen: `New Balance Nike Coca Cola`
+            """)
 
-    # Process button
-    if st.button("Jetzt codieren"):
-        process_survey_data(survey_input, brand_codes)
+    # Process button with loading state
+    if st.button("🎯 Jetzt codieren", type="primary", use_container_width=True):
+        with st.spinner("Verarbeite Eingaben..."):
+            process_survey_data(survey_input, brand_codes, use_spaces, exception_set)
 
-def process_survey_data(survey_input: str, brand_codes: dict):
+def process_survey_data(survey_input: str, brand_codes: dict, use_spaces: bool, exceptions: set):
     """Process survey data and display results"""
     if survey_input:
         try:
-            # Initialize list for matches
             all_matches = []
             start_time = datetime.now()
             
@@ -85,19 +127,24 @@ def process_survey_data(survey_input: str, brand_codes: dict):
             for line in survey_input.split("\n"):
                 line = line.strip()
                 if line:  # Ensure input line is not empty
-                    matched_line = match_organizations(line, brand_codes)
+                    matched_line = match_organizations(line, brand_codes, use_spaces, exceptions)
                     all_matches.append(matched_line)
             
             # Convert matches to dataframe
             df_matches = pd.DataFrame(all_matches)
             
-            # Display results
-            st.dataframe(df_matches)
+            # Display results in an expandable section
+            with st.expander("📊 Ergebnisse anzeigen", expanded=True):
+                st.dataframe(
+                    df_matches,
+                    use_container_width=True,
+                    hide_index=True
+                )
             
             # Create download button
             excel_data = create_excel_download(df_matches)
             st.download_button(
-                label="Download als Excel",
+                label="📥 Download als Excel",
                 data=excel_data,
                 file_name=f'fuzzy_matches_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -110,13 +157,35 @@ def process_survey_data(survey_input: str, brand_codes: dict):
         except Exception as e:
             st.error(f"Fehler bei der Verarbeitung: {str(e)}")
 
-def match_organizations(input_text: str, brand_codes: dict) -> list:
+def match_organizations(input_text: str, brand_codes: dict, use_spaces: bool, exceptions: set) -> list:
     """Match input text against brand codes using fuzzy matching"""
-    input_organizations = [org.strip() for org in input_text.split(',')]
+    # First split by comma
+    comma_parts = [part.strip() for part in input_text.split(',')]
+    organizations = []
+    
+    for part in comma_parts:
+        if not part:  # Skip empty parts
+            continue
+            
+        if use_spaces:
+            # Protect exceptions by replacing spaces with temporary marker
+            working_text = part.lower()
+            temp_marker = "§§§"
+            
+            # Replace spaces in exceptions with marker
+            for exception in exceptions:
+                if exception in working_text:
+                    working_text = working_text.replace(exception, exception.replace(" ", temp_marker))
+            
+            # Split by spaces and restore markers
+            space_parts = [org.strip().replace(temp_marker, " ") for org in working_text.split()]
+            organizations.extend(space_parts)
+        else:
+            organizations.append(part)
+    
     matches = []
-    for org in input_organizations:
+    for org in organizations:
         if org:  # Skip empty strings
-            # Match against each part of the brand codes using partial_ratio
             matched_code = process.extractOne(
                 org.lower(),
                 brand_codes.keys(),
@@ -127,6 +196,7 @@ def match_organizations(input_text: str, brand_codes: dict) -> list:
                 matches.append(brand_codes[matched_code[0]])
             else:
                 matches.append("Kein passender Code gefunden")
+    
     return [input_text] + matches
 
 def create_excel_download(df: pd.DataFrame) -> bytes:
