@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import time
+import base64
 from io import BytesIO
 from utils import save_current_state
 from services.ai_service import process_with_ai
@@ -80,10 +81,6 @@ def handle_processing():
             # Processing complete
             handle_completion()
             
-            # Add option to cancel processing
-            if st.button("❌ Verarbeitung abbrechen", key="cancel_processing", use_container_width=True):
-                cancel_processing()
-            
     except Exception as e:
         st.error(f"Fehler bei der Verarbeitung: {str(e)}")
         st.session_state.processing = False
@@ -96,20 +93,33 @@ def handle_completion():
     
     # Create Excel download button
     excel_data = convert_df_to_excel()
+    b64 = base64.b64encode(excel_data).decode()
     
-    # Place buttons side by side
-    col1, col2 = st.columns(2)
-    with col1:
-        st.download_button(
-            label="📥 Als Excel-Datei herunterladen",
-            data=excel_data,
-            file_name=f'codierungen_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            use_container_width=True
-        )
-    with col2:
-        if st.button("← Zurück zur Eingabe", use_container_width=True):
-            handle_back_to_input()
+    # HTML Download Button
+    download_filename = f'codierungen_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    html_button = f'''
+        <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" 
+           download="{download_filename}"
+           style="text-decoration: none; width: 100%;">
+            <button style="
+                background-color: #FF4B4B;
+                color: white;
+                padding: 0.5rem 1rem;
+                border: none;
+                border-radius: 0.5rem;
+                cursor: pointer;
+                width: 100%;
+                font-size: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;">
+                <span>📥</span>
+                <span>Als Excel-Datei herunterladen</span>
+            </button>
+        </a>
+    '''
+    st.markdown(html_button, unsafe_allow_html=True)
 
 def convert_df_to_excel():
     """Convert DataFrame to Excel bytes"""
