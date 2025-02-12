@@ -61,9 +61,7 @@ AI_SETTINGS = {
             "frequency_penalty": 0.0,
             "presence_penalty": 0.0
         },
-        "o3-mini": {
-            # Keine zusätzlichen Parameter für o3-mini
-        }
+        "o3-mini": {}  # Leeres Dictionary für o3-mini
     }
 }
 

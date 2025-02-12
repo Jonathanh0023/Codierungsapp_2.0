@@ -57,15 +57,16 @@ def process_with_ai(word: str) -> str:
         # Get current model
         current_model = st.session_state.get('selected_model', AI_SETTINGS["DEFAULT_MODEL"])
         
-        # Prepare API call parameters
+        # Prepare base API parameters
         api_params = {
             "model": current_model,
-            "messages": messages,
+            "messages": messages
         }
         
-        # Add model-specific parameters if they exist
-        if current_model in AI_SETTINGS["MODEL_SETTINGS"]:
-            api_params.update(AI_SETTINGS["MODEL_SETTINGS"][current_model])
+        # Add model-specific settings if they exist
+        model_settings = AI_SETTINGS["MODEL_SETTINGS"].get(current_model, {})
+        if model_settings:
+            api_params.update(model_settings)
         
         # Make API call
         response = openai.chat.completions.create(**api_params)
