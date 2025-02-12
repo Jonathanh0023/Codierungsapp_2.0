@@ -72,6 +72,8 @@ def process_with_ai(word: str) -> str:
         print(f"Error in AI processing: {str(e)}")
         raise Exception(ERROR_MESSAGES["AI_ERROR"].format(str(e)))
 
+
+
 def log_ai_interaction(input_text: str, output: str):
     """Log AI interaction to database"""
     try:
