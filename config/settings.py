@@ -55,9 +55,16 @@ DEFAULT_TASK_TEMPLATES = {
 AI_SETTINGS = {
     "DEFAULT_MODEL": "gpt-4o-mini",
     "AVAILABLE_MODELS": ["gpt-4o-mini", "o3-mini"],
-    "TEMPERATURE": 0.2,
-    "FREQUENCY_PENALTY": 0.0,
-    "PRESENCE_PENALTY": 0.0
+    "MODEL_SETTINGS": {
+        "gpt-4o-mini": {
+            "temperature": 0.2,
+            "frequency_penalty": 0.0,
+            "presence_penalty": 0.0
+        },
+        "o3-mini": {
+            # Keine zusätzlichen Parameter für o3-mini
+        }
+    }
 }
 
 # Database table names

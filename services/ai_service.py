@@ -54,14 +54,21 @@ def process_with_ai(word: str) -> str:
             {"role": "user", "content": prepare_prompt(word)}
         ]
         
-        # Make API call using settings
-        response = openai.chat.completions.create(
-            model=st.session_state.get('selected_model', AI_SETTINGS["DEFAULT_MODEL"]),
-            messages=messages,
-            temperature=AI_SETTINGS["TEMPERATURE"],
-            frequency_penalty=AI_SETTINGS["FREQUENCY_PENALTY"],
-            presence_penalty=AI_SETTINGS["PRESENCE_PENALTY"]
-        )
+        # Get current model
+        current_model = st.session_state.get('selected_model', AI_SETTINGS["DEFAULT_MODEL"])
+        
+        # Prepare API call parameters
+        api_params = {
+            "model": current_model,
+            "messages": messages,
+        }
+        
+        # Add model-specific parameters if they exist
+        if current_model in AI_SETTINGS["MODEL_SETTINGS"]:
+            api_params.update(AI_SETTINGS["MODEL_SETTINGS"][current_model])
+        
+        # Make API call
+        response = openai.chat.completions.create(**api_params)
         
         # Log the interaction
         log_ai_interaction(word, response.choices[0].message.content)
