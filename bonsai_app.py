@@ -40,12 +40,7 @@ def bonsai_page():
             st.session_state.selected_app = None
             st.rerun()
     
-    # Check processing state at the start
-    if st.session_state.get('processing', False):
-        handle_processing()
-        return  # Skip rendering the rest of the page while processing
-    
-    # Regular page content (only shown when not processing)
+    # Regular page content
     render_page_content()
 
 def render_page_content():
@@ -58,14 +53,19 @@ def render_page_content():
             if saved_state:
                 StateManager.update_from_saved_state(saved_state)
         
-        # Render all sections
-        render_codeplan_section()
-        render_manual_input()
-        render_study_context_section()
-        render_examples_section()
-        render_codierung_method_section()
-        render_settings_section()
-        render_start_button()
+        # Check if processing is active
+        if st.session_state.get('processing', False):
+            # Render processing interface
+            handle_processing()
+        else:
+            # Render input interface
+            render_codeplan_section()
+            render_manual_input()
+            render_study_context_section()
+            render_examples_section()
+            render_codierung_method_section()
+            render_settings_section()
+            render_start_button()
         
     except Exception as e:
         st.error(f"Fehler beim Laden der Seite: {str(e)}")

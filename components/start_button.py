@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from utils import save_current_state
+from components.processing import handle_processing
 
 def render_start_button():
     """Render the start button and handle processing initiation"""
@@ -46,16 +47,11 @@ def render_start_button():
                 # Save state before starting
                 save_current_state()
                 
-                # Show success message before rerun
+                # Show success message
                 st.success("✅ Verarbeitung wird gestartet!")
-                st.markdown("### 🔄 Wechsle zur Verarbeitungsansicht...")
                 
-                # Force a small delay to show the transition
-                import time
-                time.sleep(0.5)
-                
-                # Rerun to start processing
-                st.rerun()
+                # Start processing directly
+                handle_processing()
                 
             except Exception as e:
                 st.error(f"Fehler beim Starten der Codierung: {str(e)}") 

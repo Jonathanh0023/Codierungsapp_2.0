@@ -30,57 +30,59 @@ def handle_processing():
                 })
                 st.dataframe(codeplan_df, use_container_width=True)
         
-        # Create placeholders for dynamic content
-        progress_placeholder = st.empty()
-        status_placeholder = st.empty()
-        results_placeholder = st.empty()
-        
-        # Process all remaining words
-        while st.session_state.current_word_index < total_words:
-            # Get current word
-            current_word = st.session_state.words_to_process[st.session_state.current_word_index]
+        # Create a container at the bottom of the page
+        with st.container():
+            # Create placeholders for dynamic content
+            progress_placeholder = st.empty()
+            status_placeholder = st.empty()
+            results_placeholder = st.empty()
             
-            # Update progress
-            progress = (st.session_state.current_word_index + 1) / total_words
-            progress_placeholder.progress(progress)
-            status_placeholder.write(f"Verarbeite {st.session_state.current_word_index + 1} von {total_words} Nennungen")
+            # Process all remaining words
+            while st.session_state.current_word_index < total_words:
+                # Get current word
+                current_word = st.session_state.words_to_process[st.session_state.current_word_index]
+                
+                # Update progress
+                progress = (st.session_state.current_word_index + 1) / total_words
+                progress_placeholder.progress(progress)
+                status_placeholder.write(f"Verarbeite {st.session_state.current_word_index + 1} von {total_words} Nennungen")
+                
+                try:
+                    # Process current word with AI
+                    ai_result = process_with_ai(current_word)
+                    
+                    # Add result to DataFrame
+                    new_row = pd.DataFrame([{
+                        'Nennung': current_word,
+                        'Code': ai_result,
+                        'Zeitstempel': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }])
+                    
+                    st.session_state.results_df = pd.concat([st.session_state.results_df, new_row], ignore_index=True)
+                    
+                    # Display updated results
+                    results_placeholder.dataframe(
+                        st.session_state.results_df,
+                        use_container_width=True,
+                        height=400  # Reduzierte Höhe für bessere Integration
+                    )
+                    
+                    # Move to next word
+                    st.session_state.current_word_index += 1
+                    
+                    # Small delay to prevent rate limiting
+                    time.sleep(0.1)
+                    
+                except Exception as e:
+                    st.error(f"Fehler bei der Verarbeitung von '{current_word}': {str(e)}")
+                    continue
             
-            try:
-                # Process current word with AI
-                ai_result = process_with_ai(current_word)
-                
-                # Add result to DataFrame
-                new_row = pd.DataFrame([{
-                    'Nennung': current_word,
-                    'Code': ai_result,
-                    'Zeitstempel': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                }])
-                
-                st.session_state.results_df = pd.concat([st.session_state.results_df, new_row], ignore_index=True)
-                
-                # Display updated results
-                results_placeholder.dataframe(
-                    st.session_state.results_df,
-                    width=1200,  # Angepasste Breite
-                    height=800    # Optional: Angepasste Höhe
-                )
-                
-                # Move to next word
-                st.session_state.current_word_index += 1
-                
-                # Small delay to prevent rate limiting
-                time.sleep(0.1)
-                
-            except Exception as e:
-                st.error(f"Fehler bei der Verarbeitung von '{current_word}': {str(e)}")
-                continue
-        
-        # Processing complete
-        handle_completion()
-        
-        # Add option to cancel processing
-        if st.button("❌ Verarbeitung abbrechen", key="cancel_processing", use_container_width=True):
-            cancel_processing()
+            # Processing complete
+            handle_completion()
+            
+            # Add option to cancel processing
+            if st.button("❌ Verarbeitung abbrechen", key="cancel_processing", use_container_width=True):
+                cancel_processing()
             
     except Exception as e:
         st.error(f"Fehler bei der Verarbeitung: {str(e)}")
