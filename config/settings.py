@@ -56,7 +56,6 @@ AI_SETTINGS = {
     "DEFAULT_MODEL": "gpt-4o-mini",
     "AVAILABLE_MODELS": ["gpt-4o-mini", "o3-mini"],
     "TEMPERATURE": 0.2,
-    "MAX_TOKENS": 150,
     "FREQUENCY_PENALTY": 0.0,
     "PRESENCE_PENALTY": 0.0
 }
