@@ -59,7 +59,6 @@ def process_with_ai(word: str) -> str:
             model=st.session_state.get('selected_model', AI_SETTINGS["DEFAULT_MODEL"]),
             messages=messages,
             temperature=AI_SETTINGS["TEMPERATURE"],
-            max_tokens=AI_SETTINGS["MAX_TOKENS"],
             frequency_penalty=AI_SETTINGS["FREQUENCY_PENALTY"],
             presence_penalty=AI_SETTINGS["PRESENCE_PENALTY"]
         )
