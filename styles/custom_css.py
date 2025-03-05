@@ -156,9 +156,24 @@ def get_custom_css():
             max-width: 1400px !important;
         }
         
-        /* Toolbar verstecken */
+        /* Streamlit Toolbar explizit anzeigen */
         [data-testid="stToolbar"] {
-            display: none;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* Streamlit Toolbar Buttons und Text sichtbar machen */
+        [data-testid="stToolbar"] button, 
+        [data-testid="stToolbar"] span, 
+        [data-testid="stToolbar"] a, 
+        [data-testid="stToolbar"] div {
+            color: #333 !important;
+            fill: #333 !important;
+            background-color: transparent !important;
+            -webkit-text-fill-color: #333 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         /* Footer */
@@ -186,9 +201,27 @@ def get_custom_css():
             }
         }
         
-        /* Letzte Aktivitäten Sektion */
+        /* Streamlit Header explizit anzeigen */
         [data-testid="stHeader"] {
+            background-color: #f0f2f6 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            height: auto !important;
+            min-height: 50px !important;
+        }
+        
+        /* Streamlit Header Buttons und Text sichtbar machen */
+        [data-testid="stHeader"] button, 
+        [data-testid="stHeader"] span, 
+        [data-testid="stHeader"] a, 
+        [data-testid="stHeader"] div {
+            color: #333 !important;
+            fill: #333 !important;
             background-color: transparent !important;
+            -webkit-text-fill-color: #333 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         .recent-activity {

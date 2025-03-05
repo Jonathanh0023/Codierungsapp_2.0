@@ -113,67 +113,73 @@ def generate_codeplan():
         height=200
     )
     
-    generate_button = st.button(
-        "🤖 Codeplan generieren", 
-        disabled=not (ai_nennungen and st.session_state.api_key),
-        key="generate_codeplan_button"
-    )
+    # Erstelle einen Container für die Ergebnisse
+    result_container = st.empty()
     
-    if generate_button:
-        if not st.session_state.api_key:
-            st.error("Bitte gib einen OpenAI API-Schlüssel ein.")
-            return
-            
-        with st.spinner("KI generiert Codeplan..."):
-            try:
-                # Setze den API Key
-                openai.api_key = st.session_state.api_key
-                
-                # Prompt für die KI
-                prompt = f"""Analysiere die folgenden Nennungen und erstelle {num_categories} sinnvolle Kategorien zur Codierung.
-
-Studienkontext:
-{ai_context}
-
-Nennungen:
-{ai_nennungen}
-
-Erstelle einen Codeplan mit folgenden Anforderungen:
-1. Genau {num_categories} Kategorien
-2. Jede Kategorie sollte prägnant und eindeutig sein
-3. Die Kategorien sollten alle wichtigen Aspekte der Nennungen abdecken
-4. Vergib für jede Kategorie einen numerischen Code (1, 2, 3, ...)
-
-Antworte im Format:
-Code | Kategorie | Beschreibung
-1 | [Kategorie 1] | [Kurze Beschreibung]
-2 | [Kategorie 2] | [Kurze Beschreibung]
-...
-"""
-                # KI-Anfrage
-                response = openai.chat.completions.create(
-                    model=st.session_state.selected_model,
-                    messages=[
-                        {"role": "system", "content": "Du bist ein Experte für die Entwicklung von Kategoriensystemen und Codeplänen."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7
-                )
-                
-                # Log AI interaction
-                DatabaseService.log_ai_interaction({
-                    "user_id": st.session_state.user_id,
-                    "input_text": prompt,
-                    "output_text": response.choices[0].message.content,
-                    "model_used": st.session_state.selected_model,
-                    "created_at": datetime.now().isoformat()
-                })
-                
-                # Process and display results
-                handle_ai_response(response.choices[0].message.content, ai_nennungen)
-                
-            except Exception as e:
-                st.error(f"Fehler bei der KI-Generierung: {str(e)}")
+    # Überprüfe, ob der Button deaktiviert sein sollte
+    is_disabled = not (ai_nennungen and st.session_state.get('api_key', ''))
+    
+    # Direkter Streamlit-Button für die Generierung
+    if st.button("🤖 Codeplan generieren", key="generate_codeplan_button", disabled=is_disabled, type="primary"):
+        with result_container:
+            with st.spinner("Generiere Codeplan mit KI..."):
+                try:
+                    # Setze den API-Key
+                    openai.api_key = st.session_state.api_key
+                    
+                    # Bereite den Prompt vor
+                    prompt = f"""
+                    Aufgabe: Erstelle einen Codeplan mit {num_categories} Kategorien basierend auf den folgenden Nennungen.
+                    
+                    Studienkontext: {ai_context if ai_context else 'Nicht angegeben'}
+                    
+                    Nennungen:
+                    {ai_nennungen}
+                    
+                    Bitte erstelle einen Codeplan im folgenden Format:
+                    | Code | Kategorie | Beschreibung |
+                    |------|-----------|-------------|
+                    | 1 | Kategorie 1 | Beschreibung für Kategorie 1 |
+                    | 2 | Kategorie 2 | Beschreibung für Kategorie 2 |
+                    ...
+                    
+                    Wichtig:
+                    1. Erstelle genau {num_categories} Kategorien
+                    2. Jede Kategorie sollte einen klaren, präzisen Namen haben
+                    3. Die Beschreibung sollte erklären, welche Art von Nennungen in diese Kategorie fallen
+                    4. Verwende als Codes einfache Zahlen (1, 2, 3, ...)
+                    """
+                    
+                    # Hole das aktuelle Modell
+                    current_model = st.session_state.get('selected_model', 'gpt-4o-mini')
+                    
+                    # Bereite die API-Parameter vor
+                    api_params = {
+                        "model": current_model,
+                        "messages": [
+                            {"role": "system", "content": "Du bist ein Experte für qualitative Inhaltsanalyse und Kategorienbildung."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": 0.7
+                    }
+                    
+                    # Füge modellspezifische Einstellungen hinzu, wenn vorhanden
+                    from config.settings import AI_SETTINGS
+                    model_settings = AI_SETTINGS["MODEL_SETTINGS"].get(current_model, {})
+                    if model_settings:
+                        api_params.update(model_settings)
+                    
+                    # Mache den API-Aufruf
+                    response = openai.chat.completions.create(**api_params)
+                    result = response.choices[0].message.content.strip()
+                    
+                    # Verarbeite die Antwort
+                    handle_ai_response(result, ai_nennungen)
+                    
+                except Exception as e:
+                    st.error(f"Fehler bei der Generierung des Codeplans: {str(e)}")
+                    import traceback
+                    st.error(traceback.format_exc())
 
 def handle_ai_response(result: str, ai_nennungen: str):
     """Handle the AI response and update the UI"""
@@ -185,18 +191,35 @@ def handle_ai_response(result: str, ai_nennungen: str):
     lines = result.strip().split('\n')
     codes = []
     categories = []
+    descriptions = []
+    
+    # Debug-Ausgabe
+    st.write("Extrahiere Daten aus folgenden Zeilen:")
     
     for line in lines:
         if '|' in line:
             parts = [p.strip() for p in line.split('|')]
+            # Debug-Ausgabe für jede Zeile
+            st.write(f"Zeile: {line}")
+            st.write(f"Teile: {parts}")
+            
+            # Überspringe Überschriften und Trennzeilen
             if not any(header in line.lower() for header in ['code', 'kategorie', 'beschreibung', '---']):
                 try:
-                    code = parts[0].strip()
-                    category = parts[1].strip()
-                    if code and category:
-                        codes.append(code)
-                        categories.append(category)
-                except IndexError:
+                    # In einer Markdown-Tabelle ist das erste Element leer
+                    # Format: | Code | Kategorie | Beschreibung |
+                    if len(parts) >= 4:  # Mindestens 4 Teile (leerer Teil + Code + Kategorie + Beschreibung)
+                        code = parts[1].strip()  # Code ist in der zweiten Spalte (Index 1)
+                        category = parts[2].strip()  # Kategorie ist in der dritten Spalte (Index 2)
+                        description = parts[3].strip() if len(parts) > 3 else ""  # Beschreibung ist in der vierten Spalte (Index 3)
+                        
+                        if code and category:
+                            codes.append(code)
+                            categories.append(category)
+                            descriptions.append(description)
+                            st.write(f"Extrahiert: Code={code}, Kategorie={category}")
+                except IndexError as e:
+                    st.write(f"Fehler bei der Extraktion: {str(e)}")
                     continue
     
     if codes and categories:
@@ -216,22 +239,26 @@ def handle_ai_response(result: str, ai_nennungen: str):
             # Save using database service
             saved_plan = DatabaseService.save_codeplan(codeplan_data)
             if saved_plan:
-                # Update session state
-                st.session_state.codes_input_text = '\n'.join(codes)
+                # Update session state - Korrigierte Variablennamen
+                st.session_state.codes_input = '\n'.join(codes)
                 st.session_state.codes_input_area = '\n'.join(codes)
-                st.session_state.categories_input_text = '\n'.join(categories)
+                st.session_state.categories_input = '\n'.join(categories)
                 st.session_state.categories_input_area = '\n'.join(categories)
                 st.session_state.search_words_input = ai_nennungen
                 st.session_state.search_words_input_area = ai_nennungen
                 
                 st.success("✅ KI-generierter Codeplan wurde in die Eingabefelder übernommen!")
                 save_current_state()
-                time.sleep(0.5)
+                time.sleep(1.5)  # Längere Verzögerung für bessere Sichtbarkeit
                 st.rerun()
         except Exception as e:
             st.error(f"Fehler beim Speichern des generierten Codeplans: {str(e)}")
+            import traceback
+            st.error(traceback.format_exc())
     else:
         st.error("Konnte keine gültigen Codes und Kategorien aus der KI-Antwort extrahieren.")
+        st.write("Rohdaten der KI-Antwort:")
+        st.code(result)
 
 def render_codeplan_section():
     """Rendert den Codeplan-Bereich der UI"""

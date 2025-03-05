@@ -10,7 +10,6 @@ def render_codes_input():
     codes_input = st.text_area(
         "Codes", 
         key="codes_input_area", 
-        value=current_codes,
         placeholder="1\n2\n3", 
         height=300,
         on_change=update_session_state,
@@ -31,7 +30,6 @@ def render_categories_input():
     categories = st.text_area(
         "Kategorien:", 
         key="categories_input_area",
-        value=current_categories,
         placeholder='Kategorie für Code 1\nKategorie für Code 2\nKategorie für Code 3\n...', 
         height=300,
         on_change=update_session_state,
@@ -52,7 +50,6 @@ def render_words_input():
     words = st.text_area(
         "Offene Nennungen:", 
         key="search_words_input_area",
-        value=current_words,
         placeholder='Offene Nennungen untereinander einfügen', 
         height=300,
         on_change=update_session_state,
